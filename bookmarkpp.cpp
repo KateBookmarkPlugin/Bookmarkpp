@@ -42,6 +42,7 @@ K_EXPORT_PLUGIN(BookmarkPlusPlusFactory("bookmarkpp", "ktexteditor_plugins"))
 BookmarkPlusPlus::BookmarkPlusPlus(QObject *parent, const QVariantList &args)
     : KTextEditor::Plugin(parent)
 {
+    qDebug()<<"BookmarkPlusPlus::BookmarkPlusPlus()\n";
     // Avoid warning on compile time because of unused argument
     Q_UNUSED(args);
     m_bookmarks=new BookmarkMap();
@@ -57,7 +58,7 @@ BookmarkPlusPlus::~BookmarkPlusPlus()
 // Create the plugin view class and add it to the views list
 void BookmarkPlusPlus::addView(KTextEditor::View *view)
 {
-  qDebug()<<"dodat je view za dokument:"<<view->document()->url()<<"\n";
+  qDebug()<<"BookmarkPlusPlus::addView(url="<<view->document()->url()<<")\n";
     BookmarkPlusPlusView *nview = new BookmarkPlusPlusView(view,m_bookmarks);
     m_views.append(nview);
 }
@@ -66,6 +67,7 @@ void BookmarkPlusPlus::addView(KTextEditor::View *view)
 // Do not forget to free the memory.
 void BookmarkPlusPlus::removeView(KTextEditor::View *view)
 {
+  qDebug()<<"BookmarkPlusPlus::removeView(->doc()->name="<<view->document()->url()<<")\n";
     for (int z = 0; z < m_views.size(); z++)
     {
         if (m_views.at(z)->parentClient() == view)
@@ -79,7 +81,7 @@ void BookmarkPlusPlus::removeView(KTextEditor::View *view)
 // Add the document to documents
 void BookmarkPlusPlus::addDocument(KTextEditor::Document *doc)
 {
-  qDebug()<<"otvaram dokument: "<<doc->documentName()<<" "<<doc->url()<<"\n";
+  qDebug()<<"BookmarkPlusPlus::addDocument(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
     m_bookmarks->addDocument(doc);
     m_docs.append(doc);
     readConfig(doc);
@@ -88,6 +90,7 @@ void BookmarkPlusPlus::addDocument(KTextEditor::Document *doc)
 // Remove a document from documents list
 void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
 {
+    qDebug()<<"BookmarkPlusPlus::removeDocument(name="<<doc->documentName()<<",url"<<doc->url()<<")\n";
     writeConfig(doc);
     m_bookmarks->removeDocument(doc);
     for (int z = 0; z < m_docs.size(); z++)
@@ -101,7 +104,7 @@ void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
 
 void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
 {
-  qDebug()<<"\nreadConfig je pozvan\n";
+  qDebug()<<"BookmarkPlusPlus::readConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus");
   QVariantList serializedData=cg.readEntry(doc->url().prettyUrl(), QVariantList());
   if(serializedData.isEmpty())
@@ -121,70 +124,83 @@ void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
 
 void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc)
 {
-  qDebug()<<"\nwriteConfig je pozvan\n";
+  qDebug()<<"BookmarkPlusPlus::writeConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus" );
-  cg.writeEntry
-  (doc->url().prettyUrl(), *(m_bookmarks->m_docmap[doc]->serialize()));
+  cg.writeEntry(doc->url().prettyUrl(), *(m_bookmarks->m_docmap[doc]->serialize()));
 }
-
+//------------------------------------------------------------------------
 // Plugin view class
+//------------------------------------------------------------------------
 BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* books)
   : QObject(view)
   , KXMLGUIClient(view)
   , m_view(view)
   , m_books(books)
 {
+    //debug
+    qDebug()<<"BookmarkPlusPlusView::BookmarkPlusPlusView(view->doc->name="<<view->document()->documentName()<<
+    ",url="<<view->document()->url()<<")\n";
+  
     setComponentData(BookmarkPlusPlusFactory::componentData());
- 
-    KAction *action = new KAction(i18n("Dummyyyyy"), this);
+  
     // Here we need as first parameter the same we declared at the resource
-    // contents file (timedateui.rc). We named the action "tools_insert_timedate".
+    // contents file (ui.rc). We named the action "tools_insert_timedate".
     // Here is where we connect it to an actual KDE action.
+   
+    KAction *action = new KAction(i18n("Dummyyyyy"), this);
     actionCollection()->addAction("tools_insert_timedate", action);
-    action->setShortcut(Qt::CTRL + Qt::Key_D);
+//     action->setShortcut(Qt::CTRL + Qt::Key_D);
     // As usual, we connect the signal triggered() to a slot here. When the menu
     // element is clicked, we go to the slot slotInsertTimeDate().
     connect(action, SIGNAL(triggered()), this, SLOT(slotInsertTimeDate()));
+    
+    //proba
     connect(view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),
             this,SLOT(slotInsertTimeDate()));
-    // This is always needed, tell the KDE XML GUI client that we are using
-    // that file for reading actions from.
+    
+    //set bookmark
     KAction *setBookmarkAction = new KAction(i18n("Set Bookmark"), this);
     actionCollection()->addAction("tools_set_bookmark",setBookmarkAction);
     setBookmarkAction->setShortcut(Qt::CTRL +Qt::ALT+Qt::Key_B);
     connect(setBookmarkAction,SIGNAL(triggered()),this,SLOT(slotSetBookmark()));
     
+    
+    // This is always needed, tell the KDE XML GUI client that we are using
+    // that file for reading actions from.
     setXMLFile("ui.rc");
 }
  
 // Destructor
 BookmarkPlusPlusView::~BookmarkPlusPlusView()
 {
+  qDebug()<<"BookmarkPlusPlusView::~BookmarkPlusPlusView()\n";
 }
 
 
 void BookmarkPlusPlusView::slotSetBookmark()
 {
-  QTextStream qout(stdout);
+  qDebug()<<"BookmarkPlusPlusView::slotSetBookmark()";
   bool ok;
   QString text=QInputDialog::getText(NULL,QString("Set Bookmark"),
       QString("Bookmark name:"),QLineEdit::Normal,
       QString("name"),&ok,NULL);
   if(ok)
-    qout<<text<<QString("\n");
+    qDebug()<<"\nback from the dialog...ok=true,text="<<text<<"\n";
   else
-    qout<<QString("Input string not OK!\n");
+  {
+    qDebug()<<"\n...ok=false, something wrong...";
+    return;
+  }
   m_books->addBookmark(m_view->document(),text,
-                       m_view->cursorPosition().line()
-           );
+                       m_view->cursorPosition().line());
   
   
 }
-// The slot that will be called when the menu element "Insert Time & Date" is
+// The slot that will be called when the menu element "Dummy" is
 // clicked.
 void BookmarkPlusPlusView::slotInsertTimeDate()
 {
-    
+    qDebug()<<"BookmarkPlusPlusView::slotInsertTimeDate()";
     m_books->refresh(m_view->document());
 //     std::cout<<typeid(m_view->document()).name()<<std::endl;
 //     KTextEditor::MarkInterface* mi=qobject_cast

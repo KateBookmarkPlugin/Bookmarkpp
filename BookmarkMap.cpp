@@ -45,7 +45,6 @@ void BookmarkMap::removeBookmark(KTextEditor::Document* doc,QString name)
 void BookmarkMap::refresh(KTextEditor::Document *doc)
 {
   m_docmap[doc]->refresh();
-  qDebug()<<"jhg";
 }
 //return: -1 if a code doesn exist, line of named bookmark if it exists 
 int BookmarkMap::getLineInDocument(KTextEditor::Document* doc,uint code)
