@@ -41,6 +41,7 @@ public:
     int getLineOfBookmark(QString name);
     QList<QString> getBookmarkNames();
     QVariantList* serialize();
+    bool deserialize(QVariantList* list);
   private:
     KTextEditor::Document * m_doc;
     QMap < QString, uint > m_map;

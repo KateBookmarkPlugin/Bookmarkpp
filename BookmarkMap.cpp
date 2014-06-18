@@ -213,7 +213,7 @@ QVariantList* BookmarkMap::DocBookmarkMap::serialize()
       {
         qDebug()<<"neki text";
         serializationStrings->push_back(s);
-        serializationStrings->push_back(m_map[s]);
+        serializationStrings->push_back(QVariant(m_map[s]));
         qDebug()<<*serializationStrings;
       }
       qDebug()<<"onde";
@@ -225,4 +225,27 @@ QVariantList* BookmarkMap::DocBookmarkMap::serialize()
       }
       return serializationStrings;
       
+}
+
+bool BookmarkMap::DocBookmarkMap::deserialize(QVariantList* list)
+{
+  qDebug()<<"DocBookmarkMap::deserialize("<<list<<")";
+      QList<QVariant>::iterator iter=list->begin();
+      QList<QVariant>::iterator end=list->end();
+      for(;iter!=end;iter++)
+      {
+        QString name=iter->toString();
+        qDebug()<<"name:"<<name;
+        iter++;
+        if(iter==end)
+          return false;
+        bool ok;
+        uint code=iter->toUInt(&ok);
+        if(!ok)
+          return false;
+        qDebug()<<"code:"<<code;
+        m_map[name]=code;
+      }
+      qDebug()<<"}";
+      return true;
 }

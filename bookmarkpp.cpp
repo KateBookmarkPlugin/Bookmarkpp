@@ -113,13 +113,7 @@ void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
     qDebug()<<"ne valja upis ili nema";
     return;
   }
-  QList<QVariant>::iterator iter=serializedData.begin();
-  QList<QVariant>::iterator end=serializedData.end();
-  for(;iter!=end;iter++)
-  {
-    qDebug()<<"\nstampam:"<<*iter;
-  }
-  
+  m_bookmarks->m_docmap[doc]->deserialize(&serializedData);  
 }
 
 void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc)
