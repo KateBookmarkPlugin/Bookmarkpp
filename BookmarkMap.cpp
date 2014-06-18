@@ -18,53 +18,64 @@
 
 BookmarkMap::BookmarkMap()
 {
+  qDebug()<<"BookmarkMap::BookmarkMap";
 }
 BookmarkMap::~BookmarkMap()
 {
+  qDebug()<<"BookmarkMap::~BookmarkMap";
 }
 void BookmarkMap::addDocument(KTextEditor::Document* doc)
 {
+  qDebug()<<"BookmarkMap::addDocument("<<doc->documentName()<<","<<doc->url()<<")";
   m_docmap[doc]=new DocBookmarkMap(doc);
   
 }
 void BookmarkMap::removeDocument(KTextEditor::Document* doc)
 {
+  qDebug()<<"BookmarkMap::removeDocument("<<doc->documentName()<<","<<doc->url()<<")";
   m_docmap.remove(doc);
 }
-//TODO:ima description u MarkInterface
+
 void BookmarkMap::addBookmark(KTextEditor::Document* doc,QString name,int line)
 {
+  qDebug()<<"BookmarkMap::addBookmark(docname="<<doc->documentName()<<",bookname="<<name<<",line="<<line<<")";
   m_docmap[doc]->addBookmark(name,line);
 }
 void BookmarkMap::removeBookmark(KTextEditor::Document* doc,QString name)
 {
+  qDebug()<<"BookmarkMap::removeBookmark("<<doc->documentName()<<",bookname="<<name<<")";
   m_docmap[doc]->removeBookmark(name);
 }
 //optional TODO: da ima opcija u config da li da moze da se brise bookmark sa
 // ctrl+B ili samo sa nekom nasom skracenicom za brisanje bookmarka
 void BookmarkMap::refresh(KTextEditor::Document *doc)
 {
+  qDebug()<<"BookmarkMap::refresh("<<doc->documentName()<<","<<doc->url()<<")";
   m_docmap[doc]->refresh();
 }
 //return: -1 if a code doesn exist, line of named bookmark if it exists 
 int BookmarkMap::getLineInDocument(KTextEditor::Document* doc,uint code)
 {
+  qDebug()<<"BookmarkMap::getLineInDocument("<<doc->documentName()<<",code="<<code<<")";
   return m_docmap[doc]->getLineOfBookmark(code);
 }
 //return: -2 if a name doesn't exist, -1 if a name exist, but bookmark doesn't
 //or line of named bookmark if it exists
 int BookmarkMap::getLineInDocument(KTextEditor::Document* doc,QString name)
 {
+  qDebug()<<"BookmarkMap::getLineInDocument("<<doc->documentName()<<",bookname="<<name<<")";
   return m_docmap[doc]->getLineOfBookmark(name);
 }
 
 QList<QString> BookmarkMap::getBookmarkNames(KTextEditor::Document* doc)
 {
+  qDebug()<<"BookmarkMap::getBookmarkNames("<<doc->documentName()<<")";
   return m_docmap[doc]->getBookmarkNames();
 }
 
 void BookmarkMap::serialize(KTextEditor::Document* doc)
 {
+  qDebug()<<"BookmarkMap::getBookmarkNames("<<doc->documentName()<<")";
   m_docmap[doc]->serialize();
 }
 
@@ -75,10 +86,12 @@ void BookmarkMap::serialize(KTextEditor::Document* doc)
 BookmarkMap::DocBookmarkMap::DocBookmarkMap(KTextEditor::Document* doc)
 :m_doc(doc)
 {
+  qDebug()<<"DocBookmarkMap::DocBookmarkMap";
    max=1;
 }
 void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
 {
+      qDebug()<<"DocBookmarkMap::addBookmark("<<name<<","<<line<<")";
       KTextEditor::MarkInterface* mi=qobject_cast
       <KTextEditor::MarkInterface*>(m_doc);
       uint code=((max)<<9)+1;
@@ -127,11 +140,13 @@ void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
 }
 void BookmarkMap::DocBookmarkMap::removeBookmark(QString name)
 {
+  qDebug()<<"DocBookmarkMap::removeBookmark("<<name<<")";
    m_map.remove(name);
 }
 
 void BookmarkMap::DocBookmarkMap::refresh()
 {
+  qDebug()<<"DocBookmarkMap::refresh()";
       KTextEditor::MarkInterface* mi=qobject_cast
         <KTextEditor::MarkInterface*>(m_doc);
       QList<QString> pastKeys=m_map.keys();
@@ -151,6 +166,7 @@ void BookmarkMap::DocBookmarkMap::refresh()
 
 int BookmarkMap::DocBookmarkMap::getLineOfBookmark(uint code)
 {
+  qDebug()<<"DocBookmarkMap::getLineOfBookmark("<<code<<")";
       KTextEditor::MarkInterface* mi=qobject_cast
         <KTextEditor::MarkInterface*>(m_doc);
       foreach(KTextEditor::Mark* mark,mi->marks())
@@ -162,6 +178,7 @@ int BookmarkMap::DocBookmarkMap::getLineOfBookmark(uint code)
 }
 int BookmarkMap::DocBookmarkMap::getLineOfBookmark(QString name)
 {
+  qDebug()<<"DocBookmarkMap::getLineOfBookmark("<<name<<")";
       uint code=m_map[name];
       if(code==0)
         return -2;
@@ -178,10 +195,12 @@ int BookmarkMap::DocBookmarkMap::getLineOfBookmark(QString name)
 
 QList<QString> BookmarkMap::DocBookmarkMap::getBookmarkNames()
 {
+  qDebug()<<"DocBookmarkMap::getBookmarkNames()";
    return m_map.keys();
 }
 QVariantList* BookmarkMap::DocBookmarkMap::serialize()
 {
+  qDebug()<<"DocBookmarkMap::serialize()";
       QVariantList* serializationStrings=new QVariantList();
       qDebug()<<m_doc->documentName();
       qDebug()<<"ovde";

@@ -62,14 +62,18 @@ class BookmarkPlusPlusView
   Q_OBJECT
  
   public:
-    explicit BookmarkPlusPlusView(KTextEditor::View *view = 0,BookmarkMap* bookmap=0);
-    ~BookmarkPlusPlusView();
- 
-  private Q_SLOTS:
+    explicit BookmarkPlusPlusView(KTextEditor::View *view = 0,BookmarkMap* bookmap=0,BookmarkPlusPlus* plugin=0);
+    ~BookmarkPlusPlusView();    
+  Q_SIGNALS:
+    void signalMarksChanged();
+  public Q_SLOTS:
     void slotInsertTimeDate();
     void slotSetBookmark();
+    void slotDocumentUrlChanged();
+    void slotMarksChanged();
   private:
     KTextEditor::View *m_view;
     BookmarkMap* m_books;
+    BookmarkPlusPlus* m_parent;
 };
 #endif // BOOKMARKPP_H

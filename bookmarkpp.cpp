@@ -59,8 +59,9 @@ BookmarkPlusPlus::~BookmarkPlusPlus()
 void BookmarkPlusPlus::addView(KTextEditor::View *view)
 {
   qDebug()<<"BookmarkPlusPlus::addView(url="<<view->document()->url()<<")\n";
-    BookmarkPlusPlusView *nview = new BookmarkPlusPlusView(view,m_bookmarks);
+    BookmarkPlusPlusView *nview = new BookmarkPlusPlusView(view,m_bookmarks,this);
     m_views.append(nview);
+    connect(view->document(),SIGNAL(documentUrlChanged(view->document())),nview,SLOT(slotDocumentUrlChanged()));
 }
  
 // Find the view where we want to remove the plugin from, and remove it.
@@ -91,7 +92,6 @@ void BookmarkPlusPlus::addDocument(KTextEditor::Document *doc)
 void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
 {
     qDebug()<<"BookmarkPlusPlus::removeDocument(name="<<doc->documentName()<<",url"<<doc->url()<<")\n";
-    writeConfig(doc);
     m_bookmarks->removeDocument(doc);
     for (int z = 0; z < m_docs.size(); z++)
     {
@@ -131,11 +131,12 @@ void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc)
 //------------------------------------------------------------------------
 // Plugin view class
 //------------------------------------------------------------------------
-BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* books)
+BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* books,BookmarkPlusPlus* plugin)
   : QObject(view)
   , KXMLGUIClient(view)
   , m_view(view)
   , m_books(books)
+  , m_parent(plugin)
 {
     //debug
     qDebug()<<"BookmarkPlusPlusView::BookmarkPlusPlusView(view->doc->name="<<view->document()->documentName()<<
@@ -157,7 +158,6 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     //proba
     connect(view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),
             this,SLOT(slotInsertTimeDate()));
-    
     //set bookmark
     KAction *setBookmarkAction = new KAction(i18n("Set Bookmark"), this);
     actionCollection()->addAction("tools_set_bookmark",setBookmarkAction);
@@ -193,7 +193,7 @@ void BookmarkPlusPlusView::slotSetBookmark()
   }
   m_books->addBookmark(m_view->document(),text,
                        m_view->cursorPosition().line());
-  
+  m_parent->writeConfig(m_view->document());
   
 }
 // The slot that will be called when the menu element "Dummy" is
@@ -201,6 +201,8 @@ void BookmarkPlusPlusView::slotSetBookmark()
 void BookmarkPlusPlusView::slotInsertTimeDate()
 {
     qDebug()<<"BookmarkPlusPlusView::slotInsertTimeDate()";
+    qDebug()<<m_view->document()->url()<<" "<<m_books->getBookmarkNames(m_view->document());
+    m_parent->readConfig(m_view->document());
     m_books->refresh(m_view->document());
 //     std::cout<<typeid(m_view->document()).name()<<std::endl;
 //     KTextEditor::MarkInterface* mi=qobject_cast
@@ -226,6 +228,18 @@ void BookmarkPlusPlusView::slotInsertTimeDate()
     //std::cout<<n<<std::endl;
     //m_view->document()->insertText(m_view->cursorPosition(), stringa);
 }
+
+void BookmarkPlusPlusView::slotDocumentUrlChanged()
+{
+  qDebug()<<"BookmarkPlusPlusView::slotDocumentUrlChanged()";
+}
+
+void BookmarkPlusPlusView::slotMarksChanged()
+{
+  qDebug()<<"BookmarkPlusPlusView::slotMarksChanged()";
+  m_parent->writeConfig(m_view->document());
+}
+
 // We need to include the moc file since we have declared slots and we are using
 // the Q_OBJECT macro on the BookmarkPlusPlusView class.
 #include "bookmarkpp.moc"
