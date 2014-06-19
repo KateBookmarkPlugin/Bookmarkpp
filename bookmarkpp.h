@@ -71,6 +71,8 @@ class BookmarkPlusPlusView
     void slotSetBookmark();
     void slotDocumentUrlChanged();
     void slotMarksChanged();
+    void slotPrintAllBookmarkNames();
+    void slotRefresh();
   private:
     KTextEditor::View *m_view;
     BookmarkMap* m_books;

@@ -4,6 +4,8 @@
  <Menu name="bookmarkpp"><Text>Bookmark++</Text>
     <Action name="tools_insert_timedate"/>
     <Action name="tools_set_bookmark" />
- </Menu>
+    <Action name="debug_print_all_bookmarks" />
+    <Action name="debug_refresh" />
+  </Menu>
 </MenuBar>
 </kpartplugin>

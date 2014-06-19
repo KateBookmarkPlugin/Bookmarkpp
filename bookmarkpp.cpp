@@ -151,12 +151,21 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     
     //proba
     connect(view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),
-            this,SLOT(slotInsertTimeDate()));
+          this,SLOT(slotMarksChanged()));
     //set bookmark
     KAction *setBookmarkAction = new KAction(i18n("Set Bookmark"), this);
     actionCollection()->addAction("tools_set_bookmark",setBookmarkAction);
     setBookmarkAction->setShortcut(Qt::CTRL +Qt::ALT+Qt::Key_B);
     connect(setBookmarkAction,SIGNAL(triggered()),this,SLOT(slotSetBookmark()));
+    
+    
+    KAction *printAllBookmarkNames=new KAction(i18n("Print All Bookmark Names"),this);
+    actionCollection()->addAction("debug_print_all_bookmarks",printAllBookmarkNames);
+    connect(printAllBookmarkNames,SIGNAL(triggered()),this,SLOT(slotPrintAllBookmarkNames()));
+    
+    KAction *debugRefresh=new KAction(i18n("Refresh Bookmarks"),this);
+    actionCollection()->addAction("debug_refresh",debugRefresh);
+    connect(debugRefresh,SIGNAL(triggered()),this,SLOT(slotRefresh()));
     
     
     // This is always needed, tell the KDE XML GUI client that we are using
@@ -197,7 +206,7 @@ void BookmarkPlusPlusView::slotInsertTimeDate()
     qDebug()<<"BookmarkPlusPlusView::slotInsertTimeDate()";
     qDebug()<<m_view->document()->url()<<" "<<m_books->getBookmarkNames(m_view->document());
     m_parent->readConfig(m_view->document());
-    m_books->refresh(m_view->document());
+    //m_books->refresh(m_view->document());
 //     std::cout<<typeid(m_view->document()).name()<<std::endl;
 //     KTextEditor::MarkInterface* mi=qobject_cast
 //       <KTextEditor::MarkInterface*>(m_view->document());
@@ -231,9 +240,24 @@ void BookmarkPlusPlusView::slotDocumentUrlChanged()
 void BookmarkPlusPlusView::slotMarksChanged()
 {
   qDebug()<<"BookmarkPlusPlusView::slotMarksChanged()";
-  m_parent->writeConfig(m_view->document());
+ // m_parent->writeConfig(m_view->document());
 }
 
+void BookmarkPlusPlusView::slotPrintAllBookmarkNames()
+{
+  qDebug()<<"BookmarkPlusPlusView::slotPrintAllBookmarkNames("<<m_view->document()->documentName()<<")"<<m_books->m_docmap[m_view->document()]->getBookmarkNames();
+}
+
+void BookmarkPlusPlusView::slotRefresh()
+{
+  qDebug()<<"BookmarkPlusPlusView::slotRefresh("<<m_view->document()->documentName()<<")";
+  KTextEditor::MarkInterface* mi=qobject_cast<KTextEditor::MarkInterface*>(m_view->document());
+  foreach(KTextEditor::Mark* a, mi->marks())
+  {
+    qDebug()<<a->type;
+  }
+  m_books->refresh(m_view->document());
+}
 // We need to include the moc file since we have declared slots and we are using
 // the Q_OBJECT macro on the BookmarkPlusPlusView class.
 #include "bookmarkpp.moc"

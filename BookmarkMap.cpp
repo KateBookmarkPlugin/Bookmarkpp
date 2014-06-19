@@ -89,11 +89,20 @@ BookmarkMap::DocBookmarkMap::DocBookmarkMap(KTextEditor::Document* doc)
   qDebug()<<"DocBookmarkMap::DocBookmarkMap";
    max=1;
 }
+
 void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
 {
       qDebug()<<"DocBookmarkMap::addBookmark("<<name<<","<<line<<")";
       KTextEditor::MarkInterface* mi=qobject_cast
       <KTextEditor::MarkInterface*>(m_doc);
+      //    update of max value
+      uint tmax=1;
+      foreach(uint i, m_map.values())
+      {
+        uint shifted=(i>>9);
+        tmax=tmax<shifted?shifted:tmax;
+      }
+      max=tmax;
       uint code=((max)<<9)+1;
       //check if it already exists
       int mark=mi->mark(line);
@@ -122,21 +131,6 @@ void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
         }
       }
       m_map[name]=code;
-      //debug
-      QTextStream qout(stdout);
-      foreach(QString s, m_map.keys())
-      {
-        qout<<"radim:"<<s<<" "<<m_map[s];
-      }
-//    update of max value
-      uint tmax=1;
-      foreach(uint i, m_map.values())
-      {
-        uint shifted=(i>>9);
-        tmax=tmax<shifted?shifted:tmax;
-      }
-      max=tmax;
-      qout<<"\n";
 }
 void BookmarkMap::DocBookmarkMap::removeBookmark(QString name)
 {
@@ -150,18 +144,20 @@ void BookmarkMap::DocBookmarkMap::refresh()
       KTextEditor::MarkInterface* mi=qobject_cast
         <KTextEditor::MarkInterface*>(m_doc);
       QList<QString> pastKeys=m_map.keys();
-      QMap < QString, uint > futureMap;
-      foreach(KTextEditor::Mark* mark,mi->marks())
+      foreach(QString name, pastKeys)
       {
-        foreach(QString name, pastKeys)
+        uint code=m_map[name];
+        bool found=false;
+        foreach(KTextEditor::Mark* mark,mi->marks())
         {
-          if(mark->type==m_map[name])
+          if(mark->type==code)
           {
-             futureMap[name]=mark->type;
+             found=true;
           }
         }
+        if(!found)
+          m_map.remove(name);
       }
-      m_map=futureMap;
 }//refresh
 
 int BookmarkMap::DocBookmarkMap::getLineOfBookmark(uint code)
@@ -203,33 +199,20 @@ QVariantList* BookmarkMap::DocBookmarkMap::serialize()
   qDebug()<<"DocBookmarkMap::serialize()";
       QVariantList* serializationStrings=new QVariantList();
       qDebug()<<m_doc->documentName();
-      qDebug()<<"ovde";
       QList<QString> keys=m_map.keys();
-      foreach(QString s, keys)
-      {
-        qDebug()<<m_doc->documentName();
-      }
       foreach(QString s,keys)
       {
-        qDebug()<<"neki text";
         serializationStrings->push_back(s);
-        serializationStrings->push_back(QVariant(m_map[s]));
-        qDebug()<<*serializationStrings;
+        serializationStrings->push_back(getLineOfBookmark(s));
       }
-      qDebug()<<"onde";
-      QList<QVariant>::iterator iter=serializationStrings->begin();
-      QList<QVariant>::iterator end=serializationStrings->end();
-      for(;iter!=end;iter++)
-      {
-        qDebug()<<"\nstampam:"<<*iter;
-      }
+      qDebug()<<*serializationStrings;
       return serializationStrings;
-      
 }
 
 bool BookmarkMap::DocBookmarkMap::deserialize(QVariantList* list)
 {
-  qDebug()<<"DocBookmarkMap::deserialize("<<list<<")";
+  m_map.clear();
+  qDebug()<<"DocBookmarkMap::deserialize("<<*list<<")\n{";
       QList<QVariant>::iterator iter=list->begin();
       QList<QVariant>::iterator end=list->end();
       for(;iter!=end;iter++)
@@ -240,11 +223,12 @@ bool BookmarkMap::DocBookmarkMap::deserialize(QVariantList* list)
         if(iter==end)
           return false;
         bool ok;
-        uint code=iter->toUInt(&ok);
+        int line=iter->toInt(&ok);
         if(!ok)
           return false;
-        qDebug()<<"code:"<<code;
-        m_map[name]=code;
+        qDebug()<<"line:"<<line;
+        addBookmark(name,line);
+        qDebug()<<"codebyname:"<<m_map[name];
       }
       qDebug()<<"}";
       return true;
