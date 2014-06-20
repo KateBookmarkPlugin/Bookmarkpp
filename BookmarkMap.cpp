@@ -103,12 +103,11 @@ void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
         tmax=tmax<shifted?shifted:tmax;
       }
       max=tmax;
-      uint code=((max)<<9)+1;
+      uint code=((max+1)<<9)+1;
       //check if it already exists
       int mark=mi->mark(line);
       if(!mark)
       {
-        code=((++max)<<9)+1;
         mi->addMark(line,code);
       }
       else//if it has a bookmark
@@ -119,7 +118,6 @@ void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
           {
             if(a->type==1)
             {
-              code=((++max)<<9)+1;
               mi->addMark(line,code);
             }
             else
@@ -131,6 +129,7 @@ void BookmarkMap::DocBookmarkMap::addBookmark(QString name,int line)
         }
       }
       m_map[name]=code;
+      
 }
 void BookmarkMap::DocBookmarkMap::removeBookmark(QString name)
 {
@@ -204,6 +203,7 @@ QVariantList* BookmarkMap::DocBookmarkMap::serialize()
       {
         serializationStrings->push_back(s);
         serializationStrings->push_back(getLineOfBookmark(s));
+        qDebug()<<s<<":"<<getLineOfBookmark(s)<<":"<<m_map[s];
       }
       qDebug()<<*serializationStrings;
       return serializationStrings;

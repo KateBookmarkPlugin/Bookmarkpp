@@ -150,8 +150,6 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     connect(action, SIGNAL(triggered()), this, SLOT(slotInsertTimeDate()));
     
     //proba
-    connect(view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),
-          this,SLOT(slotMarksChanged()));
     //set bookmark
     KAction *setBookmarkAction = new KAction(i18n("Set Bookmark"), this);
     actionCollection()->addAction("tools_set_bookmark",setBookmarkAction);
@@ -240,7 +238,7 @@ void BookmarkPlusPlusView::slotDocumentUrlChanged()
 void BookmarkPlusPlusView::slotMarksChanged()
 {
   qDebug()<<"BookmarkPlusPlusView::slotMarksChanged()";
- // m_parent->writeConfig(m_view->document());
+  m_parent->writeConfig(m_view->document());
 }
 
 void BookmarkPlusPlusView::slotPrintAllBookmarkNames()
