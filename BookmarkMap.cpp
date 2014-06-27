@@ -151,6 +151,7 @@ void BookmarkMap::DocBookmarkMap::refresh()
         {
           if(mark->type==code)
           {
+            if(mark->line>=0)
              found=true;
           }
         }

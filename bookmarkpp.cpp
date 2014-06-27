@@ -16,6 +16,7 @@
 #include <QInputDialog>
 #include <QPair>
 #include <map>
+#include <QMutex>
 // This macro defines a KPluginFactory subclass named BookmarkPlusPlusFactory. The second
 // argument to the macro is code that is inserted into the constructor of the class.
 // I our case all we need to do is register one plugin. If you want to have more
@@ -61,7 +62,7 @@ void BookmarkPlusPlus::addView(KTextEditor::View *view)
   qDebug()<<"BookmarkPlusPlus::addView(url="<<view->document()->url()<<")\n";
     BookmarkPlusPlusView *nview = new BookmarkPlusPlusView(view,m_bookmarks,this);
     m_views.append(nview);
-    connect(view->document(),SIGNAL(documentUrlChanged(view->document())),nview,SLOT(slotDocumentUrlChanged()));
+    connect(view->document(),SIGNAL(documentUrlChanged(KTextEditor::Document*)),nview,SLOT(slotDocumentUrlChanged(KTextEditor::Document*)));
 }
  
 // Find the view where we want to remove the plugin from, and remove it.
@@ -105,6 +106,8 @@ void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
 void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
 {
   qDebug()<<"BookmarkPlusPlus::readConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
+  if(doc->url()=="")
+    return;
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus");
   QVariantList serializedData=cg.readEntry(doc->url().prettyUrl(), QVariantList());
   if(serializedData.isEmpty())
@@ -119,6 +122,8 @@ void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
 void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc)
 {
   qDebug()<<"BookmarkPlusPlus::writeConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
+  if(doc->url()=="")
+    return;
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus" );
   cg.writeEntry(doc->url().prettyUrl(), *(m_bookmarks->m_docmap[doc]->serialize()));
 }
@@ -132,6 +137,7 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
   , m_books(books)
   , m_parent(plugin)
 {
+    marksChangedLock=0;
     //debug
     qDebug()<<"BookmarkPlusPlusView::BookmarkPlusPlusView(view->doc->name="<<view->document()->documentName()<<
     ",url="<<view->document()->url()<<")\n";
@@ -165,7 +171,7 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     actionCollection()->addAction("debug_refresh",debugRefresh);
     connect(debugRefresh,SIGNAL(triggered()),this,SLOT(slotRefresh()));
     
-    
+    connect(m_view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),this,SLOT(slotMarksChanged()));
     // This is always needed, tell the KDE XML GUI client that we are using
     // that file for reading actions from.
     setXMLFile("ui.rc");
@@ -192,9 +198,11 @@ void BookmarkPlusPlusView::slotSetBookmark()
     qDebug()<<"\n...ok=false, something wrong...";
     return;
   }
+  marksChangedLock++;
   m_books->addBookmark(m_view->document(),text,
                        m_view->cursorPosition().line());
   m_parent->writeConfig(m_view->document());
+  marksChangedLock--;
   
 }
 // The slot that will be called when the menu element "Dummy" is
@@ -230,15 +238,24 @@ void BookmarkPlusPlusView::slotInsertTimeDate()
     //m_view->document()->insertText(m_view->cursorPosition(), stringa);
 }
 
-void BookmarkPlusPlusView::slotDocumentUrlChanged()
+void BookmarkPlusPlusView::slotDocumentUrlChanged(KTextEditor::Document* doc)
 {
-  qDebug()<<"BookmarkPlusPlusView::slotDocumentUrlChanged()";
+  qDebug()<<((doc->url())=="");
+  marksChangedLock++;
+  qDebug()<<"BookmarkPlusPlusView::slotDocumentUrlChanged("<<doc->url()<<")";
+  m_parent->readConfig(doc);
+  marksChangedLock--;
 }
 
 void BookmarkPlusPlusView::slotMarksChanged()
 {
   qDebug()<<"BookmarkPlusPlusView::slotMarksChanged()";
-  m_parent->writeConfig(m_view->document());
+  if(marksChangedLock==0)
+  {
+    qDebug()<<"not writing something...";
+    m_books->refresh(m_view->document());
+    m_parent->writeConfig(m_view->document());
+  }
 }
 
 void BookmarkPlusPlusView::slotPrintAllBookmarkNames()

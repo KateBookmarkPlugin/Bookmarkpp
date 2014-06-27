@@ -14,7 +14,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QList>
 #include <KConfigGroup>
-
+#include <QMutex>
 #include "BookmarkMap.h"
 /**
   * This is the plugin class. There will be only one instance of this class.
@@ -63,13 +63,13 @@ class BookmarkPlusPlusView
  
   public:
     explicit BookmarkPlusPlusView(KTextEditor::View *view = 0,BookmarkMap* bookmap=0,BookmarkPlusPlus* plugin=0);
-    ~BookmarkPlusPlusView();    
+    ~BookmarkPlusPlusView();  
   Q_SIGNALS:
     void signalMarksChanged();
   public Q_SLOTS:
     void slotInsertTimeDate();
     void slotSetBookmark();
-    void slotDocumentUrlChanged();
+    void slotDocumentUrlChanged(KTextEditor::Document*);
     void slotMarksChanged();
     void slotPrintAllBookmarkNames();
     void slotRefresh();
@@ -77,5 +77,6 @@ class BookmarkPlusPlusView
     KTextEditor::View *m_view;
     BookmarkMap* m_books;
     BookmarkPlusPlus* m_parent;
+    int marksChangedLock;
 };
 #endif // BOOKMARKPP_H
