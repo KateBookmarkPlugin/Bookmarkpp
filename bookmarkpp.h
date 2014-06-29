@@ -43,8 +43,8 @@ class BookmarkPlusPlus
  
     void addDocument(KTextEditor::Document* doc);
     void removeDocument(KTextEditor::Document* doc);
-    void readConfig(KTextEditor::Document* doc);
-    void writeConfig(KTextEditor::Document* doc);
+    void readConfig(KTextEditor::Document* doc,bool exiting=false);
+    void writeConfig(KTextEditor::Document* doc,bool saved=false);
     
  
   private:
@@ -73,10 +73,13 @@ class BookmarkPlusPlusView
     void slotMarksChanged();
     void slotPrintAllBookmarkNames();
     void slotRefresh();
+    void slotDocumentSavedOrUploaded(KTextEditor::Document* doc,bool saveAs);
+    void slotAboutToClose(KTextEditor::Document* doc);
   private:
     KTextEditor::View *m_view;
     BookmarkMap* m_books;
     BookmarkPlusPlus* m_parent;
     int marksChangedLock;
+    QVariantList* savedBookmarkList;
 };
 #endif // BOOKMARKPP_H

@@ -63,6 +63,8 @@ void BookmarkPlusPlus::addView(KTextEditor::View *view)
     BookmarkPlusPlusView *nview = new BookmarkPlusPlusView(view,m_bookmarks,this);
     m_views.append(nview);
     connect(view->document(),SIGNAL(documentUrlChanged(KTextEditor::Document*)),nview,SLOT(slotDocumentUrlChanged(KTextEditor::Document*)));
+    connect(view->document(),SIGNAL(documentSavedOrUploaded(KTextEditor::Document*,bool)),nview,SLOT(slotDocumentSavedOrUploaded(KTextEditor::Document*,bool)));
+    connect(view->document(),SIGNAL(aboutToClose(KTextEditor::Document*)),nview,SLOT(slotAboutToClose(KTextEditor::Document*)));
 }
  
 // Find the view where we want to remove the plugin from, and remove it.
@@ -93,6 +95,8 @@ void BookmarkPlusPlus::addDocument(KTextEditor::Document *doc)
 void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
 {
     qDebug()<<"BookmarkPlusPlus::removeDocument(name="<<doc->documentName()<<",url"<<doc->url()<<")\n";
+    readConfig(doc,true);
+    writeConfig(doc);
     m_bookmarks->removeDocument(doc);
     for (int z = 0; z < m_docs.size(); z++)
     {
@@ -103,13 +107,15 @@ void BookmarkPlusPlus::removeDocument(KTextEditor::Document *doc)
     }
 }
 
-void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
+void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc,bool exiting)
 {
-  qDebug()<<"BookmarkPlusPlus::readConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
+  qDebug()<<"BookmarkPlusPlus::readConfig(name="<<doc->documentName()<<",url="<<doc->url()<<","<<exiting<<")\n";
   if(doc->url()=="")
     return;
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus");
   QVariantList serializedData=cg.readEntry(doc->url().prettyUrl(), QVariantList());
+  if(exiting)
+    serializedData=cg.readEntry(doc->url().prettyUrl()+"  saved", QVariantList());
   if(serializedData.isEmpty())
   {
     //TODO sta ako nema
@@ -119,13 +125,15 @@ void BookmarkPlusPlus::readConfig(KTextEditor::Document* doc)
   m_bookmarks->m_docmap[doc]->deserialize(&serializedData);  
 }
 
-void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc)
+void BookmarkPlusPlus::writeConfig(KTextEditor::Document* doc,bool saved)
 {
-  qDebug()<<"BookmarkPlusPlus::writeConfig(name="<<doc->documentName()<<",url="<<doc->url()<<")\n";
+  qDebug()<<"BookmarkPlusPlus::writeConfig(name="<<doc->documentName()<<",url="<<doc->url()<<","<<saved<<")\n";
   if(doc->url()=="")
     return;
   KConfigGroup cg(KGlobal::config(), "BookmarkPlusPlus" );
   cg.writeEntry(doc->url().prettyUrl(), *(m_bookmarks->m_docmap[doc]->serialize()));
+  if(saved)
+    cg.writeEntry((doc->url().prettyUrl())+"  saved",*(m_bookmarks->m_docmap[doc]->serialize()));
 }
 //------------------------------------------------------------------------
 // Plugin view class
@@ -138,6 +146,7 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
   , m_parent(plugin)
 {
     marksChangedLock=0;
+    savedBookmarkList=new QVariantList();
     //debug
     qDebug()<<"BookmarkPlusPlusView::BookmarkPlusPlusView(view->doc->name="<<view->document()->documentName()<<
     ",url="<<view->document()->url()<<")\n";
@@ -170,7 +179,6 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     KAction *debugRefresh=new KAction(i18n("Refresh Bookmarks"),this);
     actionCollection()->addAction("debug_refresh",debugRefresh);
     connect(debugRefresh,SIGNAL(triggered()),this,SLOT(slotRefresh()));
-    
     connect(m_view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),this,SLOT(slotMarksChanged()));
     // This is always needed, tell the KDE XML GUI client that we are using
     // that file for reading actions from.
@@ -244,6 +252,8 @@ void BookmarkPlusPlusView::slotDocumentUrlChanged(KTextEditor::Document* doc)
   marksChangedLock++;
   qDebug()<<"BookmarkPlusPlusView::slotDocumentUrlChanged("<<doc->url()<<")";
   m_parent->readConfig(doc);
+  m_books->refresh(m_view->document());
+  m_parent->writeConfig(doc);
   marksChangedLock--;
 }
 
@@ -272,6 +282,20 @@ void BookmarkPlusPlusView::slotRefresh()
     qDebug()<<a->type;
   }
   m_books->refresh(m_view->document());
+}
+
+void BookmarkPlusPlusView::slotDocumentSavedOrUploaded(KTextEditor::Document* doc,bool saveAs)
+{
+  qDebug()<<"BookmarkPlusPlusView::slotDocumentSavedOrUploaded("<<doc->documentName()<<","<<saveAs<<")";
+  m_parent->writeConfig(doc,true);
+  
+}
+
+void BookmarkPlusPlusView::slotAboutToClose(KTextEditor::Document* doc)
+{
+  qDebug()<<"BookmarkPlusPlusView::slotAboutToClose("<<doc->documentName()<<")";
+  m_parent->readConfig(doc,true);
+  m_parent->writeConfig(doc,false);
 }
 // We need to include the moc file since we have declared slots and we are using
 // the Q_OBJECT macro on the BookmarkPlusPlusView class.
