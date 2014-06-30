@@ -180,6 +180,9 @@ BookmarkPlusPlusView::BookmarkPlusPlusView(KTextEditor::View *view,BookmarkMap* 
     actionCollection()->addAction("debug_refresh",debugRefresh);
     connect(debugRefresh,SIGNAL(triggered()),this,SLOT(slotRefresh()));
     connect(m_view->document(),SIGNAL(marksChanged(KTextEditor::Document*)),this,SLOT(slotMarksChanged()));
+    m_parent->readConfig(m_view->document());
+    m_books->refresh(m_view->document());
+    m_parent->writeConfig(m_view->document());
     // This is always needed, tell the KDE XML GUI client that we are using
     // that file for reading actions from.
     setXMLFile("ui.rc");
@@ -262,7 +265,7 @@ void BookmarkPlusPlusView::slotMarksChanged()
   qDebug()<<"BookmarkPlusPlusView::slotMarksChanged()";
   if(marksChangedLock==0)
   {
-    qDebug()<<"not writing something...";
+    qDebug()<<"not writing something... good to go";
     m_books->refresh(m_view->document());
     m_parent->writeConfig(m_view->document());
   }
@@ -288,7 +291,6 @@ void BookmarkPlusPlusView::slotDocumentSavedOrUploaded(KTextEditor::Document* do
 {
   qDebug()<<"BookmarkPlusPlusView::slotDocumentSavedOrUploaded("<<doc->documentName()<<","<<saveAs<<")";
   m_parent->writeConfig(doc,true);
-  
 }
 
 void BookmarkPlusPlusView::slotAboutToClose(KTextEditor::Document* doc)
